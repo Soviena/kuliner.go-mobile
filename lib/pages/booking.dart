@@ -12,7 +12,9 @@ import 'package:kuliner_go_mobile/pages/restaurant_page.dart';
 import 'package:kuliner_go_mobile/theme.dart';
 
 class bookingPage extends StatefulWidget {
-  final DocumentSnapshot resto;
+  final dynamic resto;
+  final String url = "https://kulinergo.belajarpro.online/";
+
   final String email;
   final String username;
   const bookingPage(
@@ -194,7 +196,8 @@ class _bookingPageState extends State<bookingPage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: Image.network(
-                          widget.resto['imageUrl'],
+                          "${widget.url}storage/restoran/" +
+                              widget.resto['gambar'],
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -212,7 +215,7 @@ class _bookingPageState extends State<bookingPage> {
                               width: 4,
                             ),
                             Text(
-                              '${widget.resto['username']}',
+                              '${widget.resto['nama']}',
                               style: const TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.w700),
                             ),
@@ -650,7 +653,8 @@ class _bookingPageState extends State<bookingPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const ProductListScreen(),
+              builder: (context) =>
+                  ProductListScreen(restoId: widget.resto['id']),
             ),
           );
         },

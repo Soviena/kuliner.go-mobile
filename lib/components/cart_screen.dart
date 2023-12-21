@@ -1,16 +1,24 @@
+import 'dart:convert';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kuliner_go_mobile/components/cart_model.dart';
 import 'package:kuliner_go_mobile/components/cart_provider.dart';
 import 'package:kuliner_go_mobile/components/payment_succes.dart';
 import 'package:kuliner_go_mobile/components/rounded_button_field.dart';
+import 'package:kuliner_go_mobile/pages/antrian.dart';
 import 'package:provider/provider.dart';
 import 'package:badges/badges.dart' as badges;
 // ignore: unused_import
 import 'package:badges/badges.dart';
+import 'package:http/http.dart' as http;
+
 import '../database/db_helperSQFlite.dart';
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+  const CartScreen({super.key, required this.restoid});
+  final int restoid;
 
   @override
   State<CartScreen> createState() => CartScreenState();
@@ -18,8 +26,20 @@ class CartScreen extends StatefulWidget {
 
 class CartScreenState extends State<CartScreen> {
   DBHelper? dbHelper = DBHelper();
+  List<Map<String, dynamic>> convertCartListToJson(List<Cart> cartList) {
+    return cartList
+        .map((cart) => {
+              'itemName': cart.productName,
+              'price': cart.initialPrice,
+              'image': cart.image
+            })
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final username = user?.displayName ?? "User";
     final cart = Provider.of<CartProvider>(context);
 
     return Scaffold(
@@ -413,12 +433,47 @@ class CartScreenState extends State<CartScreen> {
             RoundedButton(
               text: 'Checkout',
               press: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const PaymentSucces(),
-                  ),
-                );
+                cart.getData().then((List<Cart> cart) async {
+                  List<Map<String, dynamic>> cartJson =
+                      convertCartListToJson(cart);
+                  String jsonString = jsonEncode(cartJson);
+                  var url = Uri.parse(
+                      'https://kulinergo.belajarpro.online/api/addOrder');
+                  var headers = {'Content-Type': 'application/json'};
+
+                  var data = {
+                    'id': widget.restoid,
+                    'orders': jsonString,
+                    'nama': username
+                  };
+
+                  var response = await http.post(
+                    url,
+                    headers: headers,
+                    body: jsonEncode(data),
+                  );
+
+                  if (response.statusCode == 200) {
+                    dynamic jsonData = jsonDecode(response.body);
+                    if (kDebugMode) {
+                      print(jsonData);
+                    }
+                    return jsonData['id'];
+                  } else {
+                    if (kDebugMode) {
+                      print(
+                          'Request failed with status: ${response.statusCode}');
+                    }
+                  }
+                }).then((value) => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AntrianPage(
+                          restoId: widget.restoid,
+                          myAntrianId: value,
+                        ),
+                      ),
+                    ));
               },
             )
           ],

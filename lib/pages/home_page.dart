@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:kuliner_go_mobile/components/cardCategory.dart';
@@ -13,6 +16,8 @@ import 'package:kuliner_go_mobile/pages/restaurant_page.dart';
 import 'package:kuliner_go_mobile/pages/aneka_minuman_page.dart';
 import 'package:kuliner_go_mobile/theme.dart';
 
+import 'package:http/http.dart' as http;
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -21,30 +26,149 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<String> rates = [
-    "4.8",
-    "4.6",
-    "4.4",
-    "4.2",
-    "4.1",
-    "4.0",
-    "3.8",
-    "3.6",
-    "3.4",
-    "3.2"
-  ];
-  List<String> distances = [
-    "0.6",
-    "0.9",
-    "1.2",
-    "1.4",
-    "1.6",
-    "1.8",
-    "2.0",
-    "2.2",
-    "2.4",
-    "2.6"
-  ];
+  String url = "https://kulinergo.belajarpro.online/";
+  dynamic restoran = [];
+  List<Widget> list = [];
+  void getRestoranAll() async {
+    try {
+      await http.get(Uri.parse("${url}api/restoran/all")).then(
+        (response) async {
+          if (response.statusCode == 200) {
+            if (kDebugMode) {
+              print(response.body);
+            }
+            setState(() {
+              restoran = jsonDecode(response.body);
+            });
+            makeListOfRestoran(restoran);
+          } else if (response.statusCode == 404) {
+            if (kDebugMode) {
+              print("No data");
+            }
+          } else {
+            throw Exception("Error connectiong to server");
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print(e);
+      }
+    }
+  }
+
+  void makeListOfRestoran(dynamic resto) {
+    list = [
+      SizedBox(
+        height: MediaQuery.of(context).size.height - 460,
+        child: ListView.separated(
+          itemCount: resto.length > 3 ? 3 : resto.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final restoran = resto[index];
+            return Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => restaurantPage(
+                              resto: restoran,
+                            ),
+                          ),
+                        );
+                      },
+                      child: CardResto(
+                        imageUrl:
+                            "${url}storage/restoran/" + restoran['gambar'],
+                        restoName: restoran['nama'],
+                        rate: restoran['rating'].toString(),
+                        distance: restoran['jarak'].toString(),
+                        resto: restoran as Map<String, dynamic>,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      const SizedBox(height: 20),
+      Row(
+        children: [
+          const Text(
+            "Terpopuler minggu ini",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          Container(
+            alignment: const Alignment(0.7, 0.0),
+            child: TextButton(
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const PopularResto()));
+              },
+              child: const Text(
+                'Lihat semua',
+                style: TextStyle(color: blueColor, fontSize: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(
+        height: 20,
+      ),
+      SizedBox(
+        height: 290,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: resto.length > 3 ? 3 : resto.length,
+          itemBuilder: (context, index) {
+            final restaurantData = resto[index] as Map<String, dynamic>;
+            final imagePopular =
+                "${url}storage/restoran/" + restaurantData['gambar'];
+            final restoName = restaurantData['nama'] as String;
+            final distance = restaurantData['jarak'].toString() as String;
+            final openingTime = restaurantData['jamBuka'] as String;
+            final closingTime = restaurantData['jamTutup'] as String;
+            final time = openingTime.isNotEmpty && closingTime.isNotEmpty
+                ? '$openingTime - $closingTime'
+                : '00.00 - 00.00';
+            return Padding(
+              padding: const EdgeInsets.only(right: 20),
+              child: cardPopular(
+                imagePopular: imagePopular,
+                restoName: restoName,
+                distance: distance,
+                time: time,
+              ),
+            );
+          },
+        ),
+      ),
+    ];
+    setState(() {
+      list;
+    });
+  }
+
+  @override
+  void initState() {
+    getRestoranAll();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -285,168 +409,171 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(
                     height: 10,
                   ),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('Restoran')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
-                      }
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return SizedBox(
-                          height: MediaQuery.of(context).size.height - 380,
-                          child: const Center(
-                            child: SpinKitWave(
-                              color: Colors.blue,
-                              size: 50.0,
-                            ),
-                          ),
-                        );
-                      }
-                      final docs = snapshot.data!.docs;
-                      if (docs.isEmpty) {
-                        return const Center(
-                            child:
-                                Text('Tidak ada data restoran yang ditemukan'));
-                      }
-                      return Column(
-                        children: [
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height - 460,
-                            child: ListView.separated(
-                              itemCount: docs.length > 3 ? 3 : docs.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                final resto = docs[index];
-                                final rate = rates[index];
-                                final distance = distances[index];
+                  Column(
+                    children: list,
+                  )
+                  // StreamBuilder<QuerySnapshot>(
+                  //   stream: FirebaseFirestore.instance
+                  //       .collection('Restoran')
+                  //       .snapshots(),
+                  //   builder: (context, snapshot) {
+                  //     if (snapshot.hasError) {
+                  //       return Center(child: Text('Error: ${snapshot.error}'));
+                  //     }
+                  //     if (snapshot.connectionState == ConnectionState.waiting) {
+                  //       return SizedBox(
+                  //         height: MediaQuery.of(context).size.height - 380,
+                  //         child: const Center(
+                  //           child: SpinKitWave(
+                  //             color: Colors.blue,
+                  //             size: 50.0,
+                  //           ),
+                  //         ),
+                  //       );
+                  //     }
+                  //     final docs = snapshot.data!.docs;
+                  //     if (docs.isEmpty) {
+                  //       return const Center(
+                  //           child:
+                  //               Text('Tidak ada data restoran yang ditemukan'));
+                  //     }
+                  //     return Column(
+                  //       children: [
+                  //         SizedBox(
+                  //           height: MediaQuery.of(context).size.height - 460,
+                  //           child: ListView.separated(
+                  //             itemCount: docs.length > 3 ? 3 : docs.length,
+                  //             separatorBuilder: (context, index) =>
+                  //                 const SizedBox(height: 8),
+                  //             itemBuilder: (context, index) {
+                  //               final resto = docs[index];
+                  //               final rate = rates[index];
+                  //               final distance = distances[index];
 
-                                return Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        InkWell(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    restaurantPage(
-                                                  resto: resto,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                          child: CardResto(
-                                            imageUrl: resto['imageUrl'],
-                                            restoName: resto['username'],
-                                            rate: rate,
-                                            distance: distance,
-                                            resto: resto.data()
-                                                as Map<String, dynamic>,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              const Text(
-                                "Terpopuler minggu ini",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const Spacer(),
-                              Container(
-                                alignment: const Alignment(0.7, 0.0),
-                                child: TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const PopularResto()));
-                                  },
-                                  child: const Text(
-                                    'Lihat semua',
-                                    style: TextStyle(
-                                        color: blueColor, fontSize: 14),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(
-                            height: 20,
-                          ),
-                          SizedBox(
-                            height: 290,
-                            child: StreamBuilder<QuerySnapshot>(
-                              stream: FirebaseFirestore.instance
-                                  .collection('Restoran')
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasData) {
-                                  final restaurants = snapshot.data!.docs;
+                  //               return Column(
+                  //                 children: [
+                  //                   Row(
+                  //                     mainAxisAlignment:
+                  //                         MainAxisAlignment.spaceBetween,
+                  //                     children: [
+                  //                       InkWell(
+                  //                         onTap: () {
+                  //                           Navigator.push(
+                  //                             context,
+                  //                             MaterialPageRoute(
+                  //                               builder: (context) =>
+                  //                                   restaurantPage(
+                  //                                 resto: resto,
+                  //                               ),
+                  //                             ),
+                  //                           );
+                  //                         },
+                  //                         child: CardResto(
+                  //                           imageUrl: resto['imageUrl'],
+                  //                           restoName: resto['username'],
+                  //                           rate: rate,
+                  //                           distance: distance,
+                  //                           resto: resto.data()
+                  //                               as Map<String, dynamic>,
+                  //                         ),
+                  //                       ),
+                  //                     ],
+                  //                   ),
+                  //                 ],
+                  //               );
+                  //             },
+                  //           ),
+                  //         ),
+                  //         const SizedBox(height: 20),
+                  //         Row(
+                  //           children: [
+                  //             const Text(
+                  //               "Terpopuler minggu ini",
+                  //               style: TextStyle(
+                  //                 fontSize: 20,
+                  //                 fontWeight: FontWeight.w600,
+                  //               ),
+                  //             ),
+                  //             const Spacer(),
+                  //             Container(
+                  //               alignment: const Alignment(0.7, 0.0),
+                  //               child: TextButton(
+                  //                 onPressed: () {
+                  //                   Navigator.push(
+                  //                       context,
+                  //                       MaterialPageRoute(
+                  //                           builder: (context) =>
+                  //                               const PopularResto()));
+                  //                 },
+                  //                 child: const Text(
+                  //                   'Lihat semua',
+                  //                   style: TextStyle(
+                  //                       color: blueColor, fontSize: 14),
+                  //                 ),
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //         const SizedBox(
+                  //           height: 20,
+                  //         ),
+                  //         SizedBox(
+                  //           height: 290,
+                  //           child: StreamBuilder<QuerySnapshot>(
+                  //             stream: FirebaseFirestore.instance
+                  //                 .collection('Restoran')
+                  //                 .snapshots(),
+                  //             builder: (context, snapshot) {
+                  //               if (snapshot.hasData) {
+                  //                 final restaurants = snapshot.data!.docs;
 
-                                  return ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: restaurants.length > 3
-                                        ? 3
-                                        : restaurants.length,
-                                    itemBuilder: (context, index) {
-                                      final restaurantData = restaurants[index]
-                                          .data() as Map<String, dynamic>;
-                                      final imagePopular =
-                                          restaurantData['imageUrl'] as String;
-                                      final restoName =
-                                          restaurantData['username'] as String;
-                                      final distance = distances[index];
-                                      final openingTime =
-                                          restaurantData['jamBuka'] as String;
-                                      final closingTime =
-                                          restaurantData['jamTutup'] as String;
-                                      final time = openingTime.isNotEmpty &&
-                                              closingTime.isNotEmpty
-                                          ? '$openingTime - $closingTime'
-                                          : '00.00 - 00.00';
+                  //                 return ListView.builder(
+                  //                   scrollDirection: Axis.horizontal,
+                  //                   itemCount: restaurants.length > 3
+                  //                       ? 3
+                  //                       : restaurants.length,
+                  //                   itemBuilder: (context, index) {
+                  //                     final restaurantData = restaurants[index]
+                  //                         .data() as Map<String, dynamic>;
+                  //                     final imagePopular =
+                  //                         restaurantData['imageUrl'] as String;
+                  //                     final restoName =
+                  //                         restaurantData['username'] as String;
+                  //                     final distance = distances[index];
+                  //                     final openingTime =
+                  //                         restaurantData['jamBuka'] as String;
+                  //                     final closingTime =
+                  //                         restaurantData['jamTutup'] as String;
+                  //                     final time = openingTime.isNotEmpty &&
+                  //                             closingTime.isNotEmpty
+                  //                         ? '$openingTime - $closingTime'
+                  //                         : '00.00 - 00.00';
 
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 20),
-                                        child: cardPopular(
-                                          imagePopular: imagePopular,
-                                          restoName: restoName,
-                                          distance: distance,
-                                          time: time,
-                                        ),
-                                      );
-                                    },
-                                  );
-                                } else if (snapshot.hasError) {
-                                  return const Text(
-                                      'Error loading data from Firestore');
-                                }
+                  //                     return Padding(
+                  //                       padding:
+                  //                           const EdgeInsets.only(right: 20),
+                  //                       child: cardPopular(
+                  //                         imagePopular: imagePopular,
+                  //                         restoName: restoName,
+                  //                         distance: distance,
+                  //                         time: time,
+                  //                       ),
+                  //                     );
+                  //                   },
+                  //                 );
+                  //               } else if (snapshot.hasError) {
+                  //                 return const Text(
+                  //                     'Error loading data from Firestore');
+                  //               }
 
-                                return const CircularProgressIndicator();
-                              },
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                  //               return const CircularProgressIndicator();
+                  //             },
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     );
+                  //   },
+                  // ),
                 ],
               ),
             ),

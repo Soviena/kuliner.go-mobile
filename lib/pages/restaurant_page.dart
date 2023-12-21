@@ -8,7 +8,9 @@ import 'package:url_launcher/url_launcher.dart';
 import './booking.dart';
 
 class restaurantPage extends StatelessWidget {
-  final DocumentSnapshot resto;
+  final dynamic resto;
+  String url = "https://kulinergo.belajarpro.online/";
+
   restaurantPage({super.key, required this.resto});
   DateTime currentTime = DateTime.now();
   late TimeOfDay jamBuka;
@@ -112,7 +114,7 @@ class restaurantPage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.only(top: 24, left: 84),
                       child: Text(
-                        '${resto['username']}',
+                        '${resto['nama']}',
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w600),
                       ),
@@ -127,9 +129,9 @@ class restaurantPage extends StatelessWidget {
                           left: 12.0, top: 15.0, right: 12.0, bottom: 10),
                       child: Column(
                         children: <Widget>[
-                          if (resto['imageUrl'].isNotEmpty)
+                          if (resto['gambar'].isNotEmpty)
                             Image.network(
-                              resto['imageUrl'],
+                              "${url}storage/restoran/" + resto['gambar'],
                               width: 700,
                               fit: BoxFit.cover,
                             )
@@ -149,7 +151,7 @@ class restaurantPage extends StatelessWidget {
                           padding: const EdgeInsets.only(
                               left: 20, bottom: 20, top: 12),
                           child: Text(
-                            '${resto['username']}',
+                            '${resto['nama']}',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -183,25 +185,25 @@ class restaurantPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(left: 20.0),
-                          child: Align(
-                            alignment: AlignmentDirectional.topStart,
-                            child: Text(
-                              '${resto['tipeRestoran']}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
+                    // Column(
+                    //   mainAxisAlignment: MainAxisAlignment.start,
+                    //   children: <Widget>[
+                    //     Padding(
+                    //       padding: const EdgeInsets.only(left: 20.0),
+                    //       child: Align(
+                    //         alignment: AlignmentDirectional.topStart,
+                    //         child: Text(
+                    //           '${resto['tipe']}',
+                    //           style: const TextStyle(
+                    //             fontSize: 14,
+                    //             fontWeight: FontWeight.w400,
+                    //           ),
+                    //         ),
+                    //       ),
+                    //     ),
+                    //     const SizedBox(height: 20),
+                    //   ],
+                    // ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: const <Widget>[
@@ -220,7 +222,7 @@ class restaurantPage extends StatelessWidget {
                       child: SizedBox(
                         height: 60,
                         child: Text(
-                          '${resto['detailRestoran']}',
+                          '${resto['detail']}',
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w300,
@@ -238,11 +240,12 @@ class restaurantPage extends StatelessWidget {
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: resto['hariBuka'].length,
+                              itemCount: resto['hariBuka'].split(',').length,
                               separatorBuilder: (context, index) =>
                                   const Divider(),
                               itemBuilder: (context, index) {
-                                String day = resto['hariBuka'][index];
+                                String day =
+                                    resto['hariBuka'].split(',')[index];
                                 String openingTime = resto['jamBuka'];
                                 String closingTime = resto['jamTutup'];
                                 return Row(
@@ -288,79 +291,79 @@ class restaurantPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Column(
-                      children: <Widget>[
-                        ExpansionTile(
-                          title: const Text('Daftar Menu'),
-                          leading: const Icon(Icons.restaurant_menu_sharp),
-                          children: <Widget>[
-                            StreamBuilder<QuerySnapshot>(
-                              stream: FirebaseFirestore.instance
-                                  .collection('Menu')
-                                  .where('restaurantId', isEqualTo: resto.id)
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasError) {
-                                  return Center(
-                                      child: Text('Error: ${snapshot.error}'));
-                                }
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Center(
-                                      child: CircularProgressIndicator());
-                                }
-                                final querySnapshot = snapshot.data;
-                                if (querySnapshot!.size == 0) {
-                                  return const Center(
-                                      child: Text(
-                                          'Tidak ada data menu yang ditemukan'));
-                                }
+                    // Column(
+                    //   children: <Widget>[
+                    //     ExpansionTile(
+                    //       title: const Text('Daftar Menu'),
+                    //       leading: const Icon(Icons.restaurant_menu_sharp),
+                    //       children: <Widget>[
+                    //         StreamBuilder<QuerySnapshot>(
+                    //           stream: FirebaseFirestore.instance
+                    //               .collection('Menu')
+                    //               .where('restaurantId', isEqualTo: resto.id)
+                    //               .snapshots(),
+                    //           builder: (context, snapshot) {
+                    //             if (snapshot.hasError) {
+                    //               return Center(
+                    //                   child: Text('Error: ${snapshot.error}'));
+                    //             }
+                    //             if (snapshot.connectionState ==
+                    //                 ConnectionState.waiting) {
+                    //               return const Center(
+                    //                   child: CircularProgressIndicator());
+                    //             }
+                    //             final querySnapshot = snapshot.data;
+                    //             if (querySnapshot!.size == 0) {
+                    //               return const Center(
+                    //                   child: Text(
+                    //                       'Tidak ada data menu yang ditemukan'));
+                    //             }
 
-                                final documents = querySnapshot.docs;
-                                final menuImages = documents
-                                    .take(5)
-                                    .map((doc) => doc.get('imageUrl'))
-                                    .toList();
-                                final remainingImagesCount =
-                                    documents.length - 5;
-                                return Column(
-                                  children: [
-                                    Center(
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children:
-                                            menuImages.map((menuImageUrl) {
-                                          return Container(
-                                            width: 70,
-                                            height: 70,
-                                            padding:
-                                                const EdgeInsets.only(left: 12),
-                                            child: Image.network(menuImageUrl),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                                    if (remainingImagesCount > 0)
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(top: 8.0),
-                                        child: Text(
-                                          '+$remainingImagesCount Menu lainnya',
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    //             final documents = querySnapshot.docs;
+                    //             final menuImages = documents
+                    //                 .take(5)
+                    //                 .map((doc) => doc.get('imageUrl'))
+                    //                 .toList();
+                    //             final remainingImagesCount =
+                    //                 documents.length - 5;
+                    //             return Column(
+                    //               children: [
+                    //                 Center(
+                    //                   child: Row(
+                    //                     mainAxisAlignment:
+                    //                         MainAxisAlignment.center,
+                    //                     children:
+                    //                         menuImages.map((menuImageUrl) {
+                    //                       return Container(
+                    //                         width: 70,
+                    //                         height: 70,
+                    //                         padding:
+                    //                             const EdgeInsets.only(left: 12),
+                    //                         child: Image.network(menuImageUrl),
+                    //                       );
+                    //                     }).toList(),
+                    //                   ),
+                    //                 ),
+                    //                 if (remainingImagesCount > 0)
+                    //                   Padding(
+                    //                     padding:
+                    //                         const EdgeInsets.only(top: 8.0),
+                    //                     child: Text(
+                    //                       '+$remainingImagesCount Menu lainnya',
+                    //                       style: const TextStyle(
+                    //                         color: Colors.grey,
+                    //                         fontSize: 14,
+                    //                       ),
+                    //                     ),
+                    //                   ),
+                    //               ],
+                    //             );
+                    //           },
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ],
+                    // ),
                     Column(
                       children: <Widget>[
                         ExpansionTile(
@@ -490,68 +493,68 @@ class restaurantPage extends StatelessWidget {
                               ),
                             ],
                           ),
-                          children: <Widget>[
-                            Column(
-                              children: [
-                                StreamBuilder<QuerySnapshot>(
-                                  stream: FirebaseFirestore.instance
-                                      .collection('Review')
-                                      .where('restoId', isEqualTo: resto.id)
-                                      .snapshots(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasError) {
-                                      return Text('Error: ${snapshot.error}');
-                                    }
+                          // children: <Widget>[
+                          //   Column(
+                          //     children: [
+                          //       StreamBuilder<QuerySnapshot>(
+                          //         stream: FirebaseFirestore.instance
+                          //             .collection('Review')
+                          //             .where('restoId', isEqualTo: resto.id)
+                          //             .snapshots(),
+                          //         builder: (context, snapshot) {
+                          //           if (snapshot.hasError) {
+                          //             return Text('Error: ${snapshot.error}');
+                          //           }
 
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return const CircularProgressIndicator();
-                                    }
+                          //           if (snapshot.connectionState ==
+                          //               ConnectionState.waiting) {
+                          //             return const CircularProgressIndicator();
+                          //           }
 
-                                    if (snapshot.data!.docs.isEmpty) {
-                                      return const Text(
-                                          'Belum ada yang review restoran ini');
-                                    }
-                                    final sortedDocs = snapshot.data!.docs
-                                        .map((doc) =>
-                                            doc.data() as Map<String, dynamic>)
-                                        .toList()
-                                      ..sort((a, b) {
-                                        final timestampA = a['timestamp'];
-                                        final timestampB = b['timestamp'];
+                          //           if (snapshot.data!.docs.isEmpty) {
+                          //             return const Text(
+                          //                 'Belum ada yang review restoran ini');
+                          //           }
+                          //           final sortedDocs = snapshot.data!.docs
+                          //               .map((doc) =>
+                          //                   doc.data() as Map<String, dynamic>)
+                          //               .toList()
+                          //             ..sort((a, b) {
+                          //               final timestampA = a['timestamp'];
+                          //               final timestampB = b['timestamp'];
 
-                                        if (timestampA == null ||
-                                            timestampB == null) {
-                                          return 0; 
-                                        }
+                          //               if (timestampA == null ||
+                          //                   timestampB == null) {
+                          //                 return 0;
+                          //               }
 
-                                        return timestampB.compareTo(timestampA);
-                                      });
+                          //               return timestampB.compareTo(timestampA);
+                          //             });
 
-                                    return Column(
-                                      children: sortedDocs.map((reviewData) {
-                                        double rating =
-                                            reviewData['rate'] ?? 0.0;
-                                        dynamic timestamp =
-                                            reviewData['timestamp'];
-                                        return Padding(
-                                          padding: const EdgeInsets.all(20),
-                                          child: CardReview(
-                                            imageUrl: 'assets/users_init.png',
-                                            username: reviewData['username'],
-                                            rating: rating,
-                                            timeUpload: timestamp,
-                                            comments:
-                                                '"${reviewData['commentText']}"',
-                                          ),
-                                        );
-                                      }).toList(),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
+                          //           return Column(
+                          //             children: sortedDocs.map((reviewData) {
+                          //               double rating =
+                          //                   reviewData['rate'] ?? 0.0;
+                          //               dynamic timestamp =
+                          //                   reviewData['timestamp'];
+                          //               return Padding(
+                          //                 padding: const EdgeInsets.all(20),
+                          //                 child: CardReview(
+                          //                   imageUrl: 'assets/users_init.png',
+                          //                   username: reviewData['username'],
+                          //                   rating: rating,
+                          //                   timeUpload: timestamp,
+                          //                   comments:
+                          //                       '"${reviewData['commentText']}"',
+                          //                 ),
+                          //               );
+                          //             }).toList(),
+                          //           );
+                          //         },
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ],
                         ),
                       ],
                     ),

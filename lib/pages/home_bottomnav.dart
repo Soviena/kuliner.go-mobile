@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kuliner_go_mobile/pages/favorite_page.dart';
+import 'package:kuliner_go_mobile/pages/qr_scanner.dart';
+
 import 'package:kuliner_go_mobile/pages/history_page.dart';
 import 'package:kuliner_go_mobile/pages/home_page.dart';
 import 'package:kuliner_go_mobile/pages/profile_page.dart';
@@ -38,8 +40,11 @@ class _homeBottomNavState extends State<homeBottomNav> {
         icon: Icon(Icons.home_filled),
         label: 'Beranda',
       ),
-      const BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorit'),
-      const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
+      const BottomNavigationBarItem(
+          icon: Icon(Icons.favorite), label: 'Favorit'),
+      const BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'SCAN'),
+      const BottomNavigationBarItem(
+          icon: Icon(Icons.history), label: 'Riwayat'),
       const BottomNavigationBarItem(
           icon: Icon(Icons.person_2_rounded), label: 'Profil'),
     ];
@@ -57,6 +62,7 @@ class _homeBottomNavState extends State<homeBottomNav> {
         children: const <Widget>[
           HomePage(),
           FavoritePage(),
+          QrScanner(),
           HistoryPage(),
           ProfilePage()
         ],

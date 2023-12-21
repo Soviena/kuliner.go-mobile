@@ -7,7 +7,8 @@ import 'package:badges/badges.dart' as badges;
 import 'package:provider/provider.dart';
 
 class ProductListScreen extends StatefulWidget {
-  const ProductListScreen({super.key});
+  const ProductListScreen({super.key, required this.restoId});
+  final int restoId;
 
   @override
   State<ProductListScreen> createState() => _ProductListScreenState();
@@ -66,7 +67,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const CartScreen(),
+                  builder: (context) => CartScreen(restoid: widget.restoId),
                 ),
               );
             },
@@ -173,16 +174,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                         ),
                                       );
                                       cart.addCounter();
-                                    }).onError((error, stackTrace) {
-                                    });
+                                    }).onError((error, stackTrace) {});
                                   },
                                   child: Container(
                                     width: 120,
                                     height: 35,
                                     decoration: BoxDecoration(
                                       color: Colors.blue,
-                                      borderRadius:
-                                          const BorderRadius.all(Radius.circular(10)),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(10)),
                                       border: Border.all(
                                         width: 0,
                                       ),
